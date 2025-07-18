@@ -56,3 +56,68 @@ for r in range(rows): # top to bot row
                blocked_cells.add((r,c))
           elif cell == '_':
                empty_cells.add((r,c))
+
+# Depth-First-Search (Last In first Out)
+
+def dfs (robot_pos, dirty_cells, grid):
+     visited = set() #empty set instead of list
+     stack = [((robot_pos, dirty_cells), [])]
+
+     nodes_generated = 0
+     nodes_expanded = 0
+
+     while stack:
+          (position, dirty_cells_left), path = stack.pop()
+          nodes_expanded += 1
+
+          state_key = (position, tuple(sorted(dirty_cells_left)))
+
+          if state_key in visited:
+               continue
+          visited.add(state_key)
+
+          if not dirty_cells_left:
+               for action in path:
+                    print(action)
+               print(f"{nodes_generated}: nodes generated")
+               print(f"{nodes_expanded}: nodes expanded")
+               return path
+          if dirty_cells_left:
+               new_dirty = set(dirty_cells_left)
+               new_dirty.remove(position) # remove this position from the set of dirty cells since vacuumed.
+               stack.append(((position, new_dirty), path + ['V']))
+               nodes_generated += 1
+               continue
+          
+
+          direction_map = {
+               'N':(-1,0), # up
+               'S':(1,0), # down
+               'E':(0,1), # right
+               'W':(0,-1), # left
+          }
+
+          for action, (delta_row, delta_col) in direction_map.items():
+               new_row = position[0] + delta_row
+               new_col = position[1] + delta_col
+
+               if 0 <= new_row < len(grid) and 0 <= new_col < len(grid[0]): #grids bound
+                    if grid[new_row][new_col] != "#":
+                         new_position = (new_row, new_col)
+                         stack.append(((new_position, dirty_cells_left), path + [action]))
+                         nodes_generated += 1
+
+     print("no plan found")
+     return None
+
+
+'''
+print("Grid:")
+for row in grid:
+    print("".join(row))
+
+print("\nRobot Position:", robot_pos)
+print("Dirty Cells:", dirty_cells)
+print("Blocked Cells:", blocked_cells)
+print("Empty Cells:", empty_cells)
+'''
