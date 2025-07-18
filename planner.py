@@ -2,22 +2,8 @@ import sys
 import random
 import heapq
 
-
-# run this to test:  python3 planner.py depth-first test_worlds/sample-5x7.txt
-# Read .txt and extract it
-file_path = sys.argv[2]
-with open(file_path, 'r') as f:
-     lines = f.readlines()
-
-columns = int(lines[0])
-rows = int(lines[1])
-grid = []
-for line in lines [2:]:
-     clean_line = line.strip() # remove the \n
-     row_characters = list(clean_line) # breaks string into a list of characters
-     grid.append(row_characters)
-
 '''
+Quick Information.
 grid reprsentation.
 
 - = empty cell
@@ -33,18 +19,27 @@ __*____
 ____*#@
 ___#___
 
-
+run this to test:  python3 planner.py depth-first test_worlds/sample-5x7.txt
 '''
-# set over list
-#.  - no duplicates allowed
-#.  - order is not important
+# read .txt and extract it
+file_path = sys.argv[2]
+with open(file_path, 'r') as f:
+     lines = f.readlines()
 
-robot_pos = None # no (0,0) cause it could start at different positions
+columns = int(lines[0])
+rows = int(lines[1])
+grid = []
+for line in lines [2:]:
+     clean_line = line.strip() # remove the \n
+     row_characters = list(clean_line)
+     grid.append(row_characters)
+
+robot_pos = None
 dirty_cells = set()
 blocked_cells = set()
 empty_cells = set()
 
-# NEVER UP AND DOWN, it is always left to right or right to left (tip)
+# NEVER UP AND DOWN, it is always left to right or right to left
 for r in range(rows): # top to bot row
      for c in range(columns): # left to right
           cell = grid[r][c]
@@ -82,9 +77,9 @@ def dfs (robot_pos, dirty_cells, grid):
                print(f"{nodes_generated}: nodes generated")
                print(f"{nodes_expanded}: nodes expanded")
                return path
-          if dirty_cells_left:
+          if position in dirty_cells_left:
                new_dirty = set(dirty_cells_left)
-               new_dirty.remove(position) # remove this position from the set of dirty cells since vacuumed.
+               new_dirty.remove(position) # remove this position from the set of dirty cells since vacuumed
                stack.append(((position, new_dirty), path + ['V']))
                nodes_generated += 1
                continue
@@ -101,7 +96,7 @@ def dfs (robot_pos, dirty_cells, grid):
                new_row = position[0] + delta_row
                new_col = position[1] + delta_col
 
-               if 0 <= new_row < len(grid) and 0 <= new_col < len(grid[0]): #grids bound
+               if 0 <= new_row < len(grid) and 0 <= new_col < len(grid[0]):
                     if grid[new_row][new_col] != "#":
                          new_position = (new_row, new_col)
                          stack.append(((new_position, dirty_cells_left), path + [action]))
@@ -110,14 +105,65 @@ def dfs (robot_pos, dirty_cells, grid):
      print("no plan found")
      return None
 
+# Uniform Cost Search (Priority queue)
+def ucs(robot_pos, dirty_cells, grid):
+     visited = set()
+     fringe = [(0,(robot_pos, dirty_cells), [])] # priority queue (heap)
 
-'''
-print("Grid:")
-for row in grid:
-    print("".join(row))
+     nodes_generated = 0
+     nodes_expanded = 0
 
-print("\nRobot Position:", robot_pos)
-print("Dirty Cells:", dirty_cells)
-print("Blocked Cells:", blocked_cells)
-print("Empty Cells:", empty_cells)
-'''
+     while fringe:
+          heapq.heapify(fringe) # makes sure it is a heap
+          cost, (position, dirty_cells_left), path = heapq.heappop(fringe)
+          nodes_expanded +=1
+
+          state_key = (position, tuple(sorted(dirty_cells_left)))
+
+          if state_key in visited:
+               continue
+          visited.add(state_key)
+
+          if not dirty_cells_left:
+               for action in path:
+                    print(action)
+               print(f"{nodes_generated}: nodes generated")
+               print(f"{nodes_expanded}: nodes expanded")
+               return path
+          if position in dirty_cells_left:
+               new_dirty = set(dirty_cells_left)
+               new_dirty.remove(position)
+               heapq.heappush(fringe, (cost + 1, (position, new_dirty), path + ['V']))
+               nodes_generated += 1
+               continue
+
+          direction_map = {
+               'N':(-1,0), # up
+               'S':(1,0), # down
+               'E':(0,1), # right
+               'W':(0,-1), # left
+          }
+
+          for action, (delta_row, delta_col) in direction_map.items():
+               new_row = position[0] + delta_row
+               new_col = position[1] + delta_col
+
+               if 0 <= new_row < len(grid) and 0 <= new_col < len(grid[0]):
+                    if grid[new_row][new_col] != "#":
+                         new_position = (new_row, new_col)
+                         heapq.heappush(fringe, (cost + 1, (new_position, dirty_cells_left), path + [action]))
+                         nodes_generated += 1
+     print("no plan found")
+     return None
+
+
+
+if __name__ == "__main__":
+     method = sys.argv[1]
+
+     if method == "depth-first":
+          dfs(robot_pos, dirty_cells, grid)
+     if method == "uniform-cost":
+          ucs(robot_pos, dirty_cells, grid)
+     else:
+          print("unknown method: {method}")
