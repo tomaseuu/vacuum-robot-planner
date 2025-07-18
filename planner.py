@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
      if method == "depth-first":
           dfs(robot_pos, dirty_cells, grid)
-     if method == "uniform-cost":
+     elif method == "uniform-cost":
           ucs(robot_pos, dirty_cells, grid)
      else:
-          print("unknown method: {method}")
+          print(f"unknown method: {method}")
